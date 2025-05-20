@@ -20,14 +20,29 @@
       text-align: center;
       z-index: 999;
     }
+    #searchInput {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 999;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      width: calc(100% - 40px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
+  <input id="searchInput" type="text" placeholder="🔍 ค้นหาสถานที่...">
   <div id="map"></div>
   <div id="linkDisplay">แตะที่แผนที่เพื่อคัดลอกลิงก์พิกัด 📍</div>
 
   <script>
-    let map, marker;
+    let map, marker, searchBox;
+
     function initMap() {
       const center = { lat: 13.736717, lng: 100.523186 };
       map = new google.maps.Map(document.getElementById("map"), {
@@ -35,6 +50,45 @@
         zoom: 13,
       });
 
+      const input = document.getElementById("searchInput");
+      searchBox = new google.maps.places.SearchBox(input);
+
+      map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+      // Bias search results to map's viewport
+      map.addListener("bounds_changed", () => {
+        searchBox.setBounds(map.getBounds());
+      });
+
+      // Handle place selection
+      searchBox.addListener("places_changed", () => {
+        const places = searchBox.getPlaces();
+        if (places.length == 0) return;
+
+        const place = places[0];
+        if (!place.geometry || !place.geometry.location) return;
+
+        const location = place.geometry.location;
+        map.setCenter(location);
+        map.setZoom(16);
+
+        const lat = location.lat();
+        const lng = location.lng();
+        const link = `https://www.google.com/maps?q=${lat},${lng}`;
+        document.getElementById("linkDisplay").innerText = `📋 คัดลอกแล้ว: ${link}`;
+        navigator.clipboard.writeText(link);
+
+        if (!marker) {
+          marker = new google.maps.Marker({
+            position: location,
+            map: map,
+          });
+        } else {
+          marker.setPosition(location);
+        }
+      });
+
+      // Manual click on map
       map.addListener("click", (e) => {
         const lat = e.latLng.lat();
         const lng = e.latLng.lng();
@@ -53,6 +107,8 @@
       });
     }
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4h02XblNyEBG1tszHsGVLY0-dTTeiVMk&callback=initMap" async defer></script>
+
+  <!-- ✅ เพิ่ม &libraries=places เพื่อเปิดใช้ Search Box -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4h02XblNyEBG1tszHsGVLY0-dTTeiVMk&callback=initMap&libraries=places" async defer></script>
 </body>
 </html>
