@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📍 เลือกตำแหน่ง</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+    html, body { margin: 0; padding: 0; height: 100%; }
     #map { height: 100%; width: 100%; }
 
     .map-btn {
@@ -25,12 +25,10 @@
       justify-content: center;
     }
 
-    #useLocationBtn { bottom: 130px; }
     #copyBtn { bottom: 75px; }
-
     #addressBox {
       position: absolute;
-      bottom: 10px;
+      bottom: 130px;
       left: 10px;
       right: 70px;
       background: rgba(0,0,0,0.8);
@@ -40,24 +38,9 @@
       font-size: 14px;
       z-index: 999;
     }
-
-    #searchInput {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 60px;
-      z-index: 999;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
   </style>
 </head>
 <body>
-  <input id="searchInput" type="text" placeholder="🔍 ค้นหาสถานที่...">
-  <button id="useLocationBtn" class="map-btn" title="ตำแหน่งของฉัน">📍</button>
   <button id="copyBtn" class="map-btn" title="คัดลอกลิงก์">📋</button>
   <div id="map"></div>
   <div id="addressBox">แตะที่แผนที่เพื่อดูที่อยู่</div>
@@ -66,31 +49,14 @@
     let map, marker, currentLink = "", geocoder;
 
     function initMap() {
-      const defaultCenter = { lat: 13.736717, lng: 100.523186 };
+      const center = { lat: 13.736717, lng: 100.523186 };
       map = new google.maps.Map(document.getElementById("map"), {
-        center: defaultCenter,
-        zoom: 13,
+        center,
+        zoom: 15,
       });
 
       geocoder = new google.maps.Geocoder();
 
-      // ช่องค้นหา
-      const input = document.getElementById("searchInput");
-      const searchBox = new google.maps.places.SearchBox(input);
-
-      searchBox.addListener("places_changed", () => {
-        const places = searchBox.getPlaces();
-        if (places.length === 0) return;
-        const place = places[0];
-        if (!place.geometry || !place.geometry.location) return;
-        const loc = place.geometry.location;
-        map.setCenter(loc);
-        map.setZoom(16);
-        setMarker(loc.lat(), loc.lng());
-        reverseGeocode(loc.lat(), loc.lng());
-      });
-
-      // คลิกแผนที่
       map.addListener("click", (e) => {
         const lat = e.latLng.lat();
         const lng = e.latLng.lng();
@@ -98,46 +64,27 @@
         reverseGeocode(lat, lng);
       });
 
-      // ปุ่มคัดลอก
       document.getElementById("copyBtn").addEventListener("click", () => {
         if (currentLink) {
           navigator.clipboard.writeText(currentLink);
           alert("📋 คัดลอกลิงก์แล้ว:\n" + currentLink);
         }
       });
-
-      // ปุ่มตำแหน่งของฉัน
-      document.getElementById("useLocationBtn").addEventListener("click", () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const lat = position.coords.latitude;
-              const lng = position.coords.longitude;
-              map.setCenter({ lat, lng });
-              map.setZoom(16);
-              setMarker(lat, lng);
-              reverseGeocode(lat, lng);
-            },
-            () => alert("❌ ไม่สามารถระบุตำแหน่งของคุณได้")
-          );
-        } else {
-          alert("⚠️ เบราว์เซอร์ของคุณไม่รองรับ Geolocation");
-        }
-      });
     }
 
     function setMarker(lat, lng) {
-      const pos = { lat, lng };
+      const position = { lat, lng };
       currentLink = `https://www.google.com/maps?q=${lat},${lng}`;
       if (!marker) {
-        marker = new google.maps.Marker({ position: pos, map });
+        marker = new google.maps.Marker({ position, map });
       } else {
-        marker.setPosition(pos);
+        marker.setPosition(position);
       }
     }
 
     function reverseGeocode(lat, lng) {
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      const latlng = { lat, lng };
+      geocoder.geocode({ location: latlng }, (results, status) => {
         if (status === "OK" && results[0]) {
           document.getElementById("addressBox").innerText = results[0].formatted_address;
         } else {
@@ -147,7 +94,7 @@
     }
   </script>
 
-  <!-- ✅ อย่าลืมเปลี่ยน YOUR_API_KEY เป็น API Key ของคุณ -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4h02XblNyEBG1tszHsGVLY0-dTTeiVMk&callback=initMap&libraries=places" async defer></script>
+  <!-- ต้องเปิดใช้ Geocoding API และใส่ libraries=places ถ้าต้องการช่องค้นหาด้วย -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4h02XblNyEBG1tszHsGVLY0-dTTeiVMk&callback=initMap" async defer></script>
 </body>
 </html>
