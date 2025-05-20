@@ -5,110 +5,132 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📍 เลือกตำแหน่ง</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #map { height: 100%; width: 100%; }
-    #linkDisplay {
+
+    #searchInput, #useLocationBtn, #copyBtn, #linkDisplay {
       position: absolute;
-      bottom: 10px;
       left: 10px;
       right: 10px;
+      z-index: 999;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    #searchInput {
+      top: 10px;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      width: calc(100% - 40px);
+    }
+
+    #useLocationBtn {
+      top: 60px;
+      padding: 10px;
+      font-size: 15px;
+      background: #FF9800;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #linkDisplay {
+      bottom: 60px;
       background: white;
       padding: 10px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       font-size: 14px;
       text-align: center;
-      z-index: 999;
+      word-wrap: break-word;
     }
-    #searchInput {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      z-index: 999;
+
+    #copyBtn {
+      bottom: 10px;
       padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
       font-size: 16px;
-      width: calc(100% - 40px);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <input id="searchInput" type="text" placeholder="🔍 ค้นหาสถานที่...">
+  <button id="useLocationBtn">📍 ใช้ตำแหน่งของฉัน</button>
   <div id="map"></div>
-  <div id="linkDisplay">แตะที่แผนที่เพื่อคัดลอกลิงก์พิกัด 📍</div>
+  <div id="linkDisplay">ยังไม่มีตำแหน่ง</div>
+  <button id="copyBtn">📋 คัดลอกลิงก์พิกัด</button>
 
   <script>
-    let map, marker, searchBox;
+    let map, marker, currentLink = "";
 
     function initMap() {
-      const center = { lat: 13.736717, lng: 100.523186 };
+      const defaultCenter = { lat: 13.736717, lng: 100.523186 };
       map = new google.maps.Map(document.getElementById("map"), {
-        center,
+        center: defaultCenter,
         zoom: 13,
       });
 
       const input = document.getElementById("searchInput");
-      searchBox = new google.maps.places.SearchBox(input);
-
+      const searchBox = new google.maps.places.SearchBox(input);
       map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
-      // Bias search results to map's viewport
-      map.addListener("bounds_changed", () => {
-        searchBox.setBounds(map.getBounds());
-      });
-
-      // Handle place selection
       searchBox.addListener("places_changed", () => {
         const places = searchBox.getPlaces();
-        if (places.length == 0) return;
+        if (places.length === 0) return;
 
         const place = places[0];
         if (!place.geometry || !place.geometry.location) return;
 
-        const location = place.geometry.location;
-        map.setCenter(location);
+        const loc = place.geometry.location;
+        map.setCenter(loc);
         map.setZoom(16);
+        setLocation(loc.lat(), loc.lng());
+      });
 
-        const lat = location.lat();
-        const lng = location.lng();
-        const link = `https://www.google.com/maps?q=${lat},${lng}`;
-        document.getElementById("linkDisplay").innerText = `📋 คัดลอกแล้ว: ${link}`;
-        navigator.clipboard.writeText(link);
+      map.addListener("click", (e) => {
+        setLocation(e.latLng.lat(), e.latLng.lng());
+      });
 
-        if (!marker) {
-          marker = new google.maps.Marker({
-            position: location,
-            map: map,
-          });
-        } else {
-          marker.setPosition(location);
+      document.getElementById("copyBtn").addEventListener("click", () => {
+        if (currentLink) {
+          navigator.clipboard.writeText(currentLink);
+          alert("📋 คัดลอกลิงก์แล้ว:\n" + currentLink);
         }
       });
 
-      // Manual click on map
-      map.addListener("click", (e) => {
-        const lat = e.latLng.lat();
-        const lng = e.latLng.lng();
-        const link = `https://www.google.com/maps?q=${lat},${lng}`;
-        document.getElementById("linkDisplay").innerText = `📋 คัดลอกแล้ว: ${link}`;
-        navigator.clipboard.writeText(link);
-
-        if (!marker) {
-          marker = new google.maps.Marker({
-            position: e.latLng,
-            map: map,
-          });
+      document.getElementById("useLocationBtn").addEventListener("click", () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              map.setCenter({ lat, lng });
+              map.setZoom(16);
+              setLocation(lat, lng);
+            },
+            () => alert("❌ ไม่สามารถระบุตำแหน่งของคุณได้")
+          );
         } else {
-          marker.setPosition(e.latLng);
+          alert("⚠️ เบราว์เซอร์ของคุณไม่รองรับ Geolocation");
         }
       });
     }
+
+    function setLocation(lat, lng) {
+      currentLink = `https://www.google.com/maps?q=${lat},${lng}`;
+      document.getElementById("linkDisplay").innerText = currentLink;
+
+      if (!marker) {
+        marker = new google.maps.Marker({ position: { lat, lng }, map });
+      } else {
+        marker.setPosition({ lat, lng });
+      }
+    }
   </script>
 
-  <!-- ✅ เพิ่ม &libraries=places เพื่อเปิดใช้ Search Box -->
+  <!-- ✅ อย่าลืมเปิดใช้ 'libraries=places' ด้วย -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4h02XblNyEBG1tszHsGVLY0-dTTeiVMk&callback=initMap&libraries=places" async defer></script>
 </body>
 </html>
