@@ -8,59 +8,59 @@
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
     #map { height: 100%; width: 100%; }
 
-    #searchInput, #useLocationBtn, #copyBtn, #linkDisplay {
+    /* ปุ่มลอย */
+    .map-btn {
       position: absolute;
-      left: 10px;
-      right: 10px;
+      right: 15px;
       z-index: 999;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #useLocationBtn { bottom: 130px; }
+    #copyBtn { bottom: 75px; }
+    #linkDisplay {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 70px;
+      background: white;
+      padding: 8px 10px;
+      font-size: 13px;
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 999;
     }
 
     #searchInput {
+      position: absolute;
       top: 10px;
-      padding: 12px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      width: calc(100% - 40px);
-    }
-
-    #useLocationBtn {
-      top: 60px;
-      padding: 10px;
-      font-size: 15px;
-      background: #FF9800;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    #linkDisplay {
-      bottom: 60px;
-      background: white;
-      padding: 10px;
+      left: 10px;
+      right: 60px;
+      z-index: 999;
+      padding: 8px 12px;
+      border-radius: 8px;
       font-size: 14px;
-      text-align: center;
-      word-wrap: break-word;
-    }
-
-    #copyBtn {
-      bottom: 10px;
-      padding: 12px;
-      font-size: 16px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
   <input id="searchInput" type="text" placeholder="🔍 ค้นหาสถานที่...">
-  <button id="useLocationBtn">📍 ใช้ตำแหน่งของฉัน</button>
+  <button id="useLocationBtn" class="map-btn" title="ตำแหน่งของฉัน">📍</button>
+  <button id="copyBtn" class="map-btn" title="คัดลอกลิงก์">📋</button>
   <div id="map"></div>
   <div id="linkDisplay">ยังไม่มีตำแหน่ง</div>
-  <button id="copyBtn">📋 คัดลอกลิงก์พิกัด</button>
 
   <script>
     let map, marker, currentLink = "";
@@ -74,15 +74,12 @@
 
       const input = document.getElementById("searchInput");
       const searchBox = new google.maps.places.SearchBox(input);
-      map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
       searchBox.addListener("places_changed", () => {
         const places = searchBox.getPlaces();
         if (places.length === 0) return;
-
         const place = places[0];
         if (!place.geometry || !place.geometry.location) return;
-
         const loc = place.geometry.location;
         map.setCenter(loc);
         map.setZoom(16);
@@ -121,7 +118,6 @@
     function setLocation(lat, lng) {
       currentLink = `https://www.google.com/maps?q=${lat},${lng}`;
       document.getElementById("linkDisplay").innerText = currentLink;
-
       if (!marker) {
         marker = new google.maps.Marker({ position: { lat, lng }, map });
       } else {
@@ -130,7 +126,7 @@
     }
   </script>
 
-  <!-- ✅ อย่าลืมเปิดใช้ 'libraries=places' ด้วย -->
+  <!-- ✅ ต้องใช้ libraries=places เพื่อให้ช่องค้นหาทำงาน -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4h02XblNyEBG1tszHsGVLY0-dTTeiVMk&callback=initMap&libraries=places" async defer></script>
 </body>
 </html>
